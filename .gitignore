@@ -1,0 +1,23 @@
+# getui-push .ignore
+
+# directory
+node_modules/
+.idea/
+test/
+.vscode/
+dist/
+build/
+vendor/
+logs/
+.sass-cache/
+demo/
+
+# files
+*.exe
+*.exe~
+*.log
+*.http
+test*.sh
+
+# macos
+.DS_Store
