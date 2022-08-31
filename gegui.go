@@ -5,32 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/zituocn/gow/lib/goredis"
 	"github.com/zituocn/gow/lib/logy"
-)
-
-// ClientType APP客户端类型
-type ClientType int
-
-const (
-	Android   ClientType = iota + 1 //android
-	IOS                             //ios
-	WechatAPP                       //微信小程序
-)
-
-const (
-	PublicChannel  = 1    //公信通道
-	PrivateChannel = 2    //私信通道，即聊天
-	limit          = 1000 //多个cid群推时，每次的用户量
-
+	"strings"
+	"time"
 )
 
 var (
-	TTL     = 86400000 // 1天： 1 * 24 * 3600 * 1000
-	ctx     = context.Background()
+	// TTL 消息存放时间
+	TTL = 86400000 // 1天： 1 * 24 * 3600 * 1000
+
+	ctx = context.Background()
+
+	// expTime token 在redis中的过期时间
 	expTime = time.Now().Add(time.Hour * 20).Unix()
 )
 
@@ -122,7 +109,7 @@ func (g *PushClient) GetToken() (token string, err error) {
 
 /*
 ===============================================================
-							绑定用户别名
+绑定用户别名
 ===============================================================
 */
 
@@ -174,7 +161,7 @@ func (g *PushClient) UnBindAlias(param *Alias) (resp *Response, err error) {
 
 /*
 ===============================================================
-							绑定自定义标签
+绑定自定义标签
 ===============================================================
 */
 
@@ -211,7 +198,7 @@ func (g *PushClient) BindTags(cid string, param *CustomTagsParam) (resp *Respons
 
 /*
 ===============================================================
-							推给所有人
+推给所有人
 ===============================================================
 */
 
@@ -244,7 +231,7 @@ func (g *PushClient) PushAll(scheduleTime int, payload *CustomMessage) (resp *Re
 
 /*
 ===============================================================
-							推给指定端类型
+推给指定端类型
 ===============================================================
 */
 
@@ -260,7 +247,6 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 	if err != nil {
 		return
 	}
-
 	var phones []string
 	switch clientType {
 	case Android:
@@ -292,7 +278,6 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 		PushMessage: pushMessage,
 		PushChannel: pushChannel,
 	}
-
 	resp, err = pushAppByClient(g.AppId, token, pushParam)
 	if err != nil {
 		return
@@ -302,7 +287,7 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 
 /*
 ===============================================================
-							推给某一个用户
+推给某一个用户
 ===============================================================
 */
 
@@ -341,7 +326,7 @@ func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *Custo
 
 /*
 ===============================================================
-							推给某一个用户
+推给某一个用户
 ===============================================================
 */
 
@@ -391,7 +376,6 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 		err = errors.New("cid长度为0")
 		return
 	}
-
 	token, err := g.GetToken()
 	if err != nil {
 		return
@@ -440,6 +424,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 			logy.Errorf("%s 按cid群推失败: %s %s", NAME, respList.Msg, err.Error())
 		}
 		data = append(data, respList)
+		time.Sleep(time.Second * 1) //休眠1秒钟
 	}
 
 	return

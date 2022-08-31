@@ -45,6 +45,7 @@ func bindTags(appId, token, cid string, param *CustomTagsParam) (*Response, erro
 }
 
 // searchTags 查询某个用户已绑定的标签
+//	可用于运营后台查询
 func searchTags(appId, token, cid string) (string, error) {
 	ret, err := HttpRequest("GET", appId+"/user/custom_tag/cid/"+cid, token, nil)
 	if err != nil {
@@ -96,7 +97,7 @@ func pushApp(appId, token string, param *PushParam) (*Response, error) {
 }
 
 // pushAppByClient 推给不同客户端
-//	指android或ios
+//	客户端指android或ios
 //	是android还是ios，从param中区别
 func pushAppByClient(appId, token string, param *PushParam) (*Response, error) {
 	bodyByte, err := makeReqBody(param)
@@ -148,15 +149,11 @@ func createPushMessage(appId, token string, param *PushParam) (*Response, error)
 	if err != nil {
 		return nil, err
 	}
-	code := gjson.GetBytes(b, "code").Int()
-	msg := gjson.GetBytes(b, "msg").String()
-	taskId := gjson.GetBytes(b, "data.taskid").String()
 	resp := &Response{
-		Code: int(code),
-		Msg:  msg,
-		Data: taskId,
+		Code: int(gjson.GetBytes(b, "code").Int()),
+		Msg:  gjson.GetBytes(b, "msg").String(),
+		Data: gjson.GetBytes(b, "data.taskid").String(),
 	}
-
 	return resp, nil
 }
 
