@@ -1,3 +1,14 @@
+/*
+个推client封装
+sam
+2022-09-01
+
+
+pushClient:=NewPushClient(....)
+resp,err:=pushClient.PushAll(...)
+
+*/
+
 package getuipush
 
 import (
@@ -5,10 +16,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zituocn/gow/lib/goredis"
-	"github.com/zituocn/gow/lib/logy"
+	"github.com/zituocn/getui-push/models"
 	"strings"
 	"time"
+
+	"github.com/zituocn/gow/lib/goredis"
+	"github.com/zituocn/gow/lib/logy"
 )
 
 var (
@@ -114,7 +127,7 @@ func (g *PushClient) GetToken() (token string, err error) {
 */
 
 // BindAlias 绑定别名
-func (g *PushClient) BindAlias(param *Alias) (resp *Response, err error) {
+func (g *PushClient) BindAlias(param *models.Alias) (resp *models.Response, err error) {
 	if param == nil || param.Cid == "" {
 		err = errors.New("param未设置或cid为空")
 		return
@@ -123,21 +136,17 @@ func (g *PushClient) BindAlias(param *Alias) (resp *Response, err error) {
 	if err != nil {
 		return
 	}
-	dataList := make([]*Alias, 0)
+	dataList := make([]*models.Alias, 0)
 	dataList = append(dataList, param)
-	aliasParam := &AliasParam{
+	aliasParam := &models.AliasParam{
 		DataList: dataList,
 	}
-	resp, err = bindAlias(g.AppId, token, aliasParam)
-	if err != nil {
-		return
-	}
-
-	return
+	return bindAlias(g.AppId, token, aliasParam)
 }
 
 // UnBindAlias 解绑别名
-func (g *PushClient) UnBindAlias(param *Alias) (resp *Response, err error) {
+//	cid与alias成对出现
+func (g *PushClient) UnBindAlias(param *models.Alias) (resp *models.Response, err error) {
 	if param == nil || param.Cid == "" {
 		err = errors.New("param未设置或cid为空")
 		return
@@ -146,17 +155,25 @@ func (g *PushClient) UnBindAlias(param *Alias) (resp *Response, err error) {
 	if err != nil {
 		return
 	}
-	dataList := make([]*Alias, 0)
+	dataList := make([]*models.Alias, 0)
 	dataList = append(dataList, param)
-	aliasParam := &AliasParam{
+	aliasParam := &models.AliasParam{
 		DataList: dataList,
 	}
-	resp, err = unBindAlias(g.AppId, token, aliasParam)
+	return unBindAlias(g.AppId, token, aliasParam)
+}
+
+// UnBindAllAlias 解绑所有与该别名绑定的cid
+func (g *PushClient) UnBindAllAlias(alias string) (resp *models.Response, err error) {
+	if alias == "" {
+		err = errors.New("alias为空")
+		return
+	}
+	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
-
-	return
+	return unBindAllAlias(g.AppId, token, alias)
 }
 
 /*
@@ -167,7 +184,7 @@ func (g *PushClient) UnBindAlias(param *Alias) (resp *Response, err error) {
 
 // BindTags 一个用户绑定一批标签
 //	cid表示用户
-func (g *PushClient) BindTags(cid string, param *CustomTagsParam) (resp *Response, err error) {
+func (g *PushClient) BindTags(cid string, param *models.CustomTagsParam) (resp *models.Response, err error) {
 	if cid == "" {
 		err = errors.New("cid为空")
 		return
@@ -188,12 +205,106 @@ func (g *PushClient) BindTags(cid string, param *CustomTagsParam) (resp *Respons
 	if err != nil {
 		return
 	}
-	resp, err = bindTags(g.AppId, token, cid, param)
+	return bindTags(g.AppId, token, cid, param)
+}
+
+/*
+===============================================================
+查询相关接口
+使用Response.data的返回json，需要进一步格式化展示
+===============================================================
+*/
+
+// SearchTags 查询某个用户已经绑定的标签
+func (g *PushClient) SearchTags(cid string) (resp *models.Response, err error) {
+	if cid == "" {
+		err = errors.New("cid为空")
+		return
+	}
+	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
+	return searchTags(g.AppId, token, cid)
+}
 
+// SearchStatus 查询某个用户的状态，是否在线，上次在线时间等
+//	根据cid查询
+func (g *PushClient) SearchStatus(cid string) (resp *models.Response, err error) {
+	if cid == "" {
+		err = errors.New("cid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return searchStatus(g.AppId, token, cid)
+}
+
+// SearchUser 查询用户信息
+//	根据cid查询
+func (g *PushClient) SearchUser(cid string) (resp *models.Response, err error) {
+	if cid == "" {
+		err = errors.New("cid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	resp, err = searchUser(g.AppId, token, cid)
+	if err != nil {
+		return
+	}
 	return
+}
+
+// SearchAliasByCid 按cid查别名
+//	即这台设备上登录过哪些帐号
+func (g *PushClient) SearchAliasByCid(cid string) (resp *models.Response, err error) {
+	if cid == "" {
+		err = errors.New("cid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return searchAliasByCid(g.AppId, token, cid)
+}
+
+// SearchCidByAlias 按alias查cid
+//	即这个alias绑定过哪些设备
+func (g *PushClient) SearchCidByAlias(alias string) (resp *models.Response, err error) {
+	if alias == "" {
+		err = errors.New("别名为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return searchCidByAlias(g.AppId, token, alias)
+}
+
+// SearchTaskDetailByCid 可以查询某任务下某cid的具体实时推送路径情况
+//	用于跟踪某个用户的消息到达情况
+//	此接口需要SVIP权限，暂时不可用
+func (g *PushClient) SearchTaskDetailByCid(cid, taskId string) (resp *models.TaskDetailResp, err error) {
+	if cid == "" {
+		err = errors.New("cid为空")
+		return
+	}
+	if taskId == "" {
+		err = errors.New("taskid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return searchTaskDetailByCid(g.AppId, token, cid, taskId)
 }
 
 /*
@@ -204,7 +315,7 @@ func (g *PushClient) BindTags(cid string, param *CustomTagsParam) (resp *Respons
 
 // PushAll 推送给所有人
 //	scheduleTime 定时推送时间戳，为0时，不定时
-func (g *PushClient) PushAll(scheduleTime int, payload *CustomMessage) (resp *Response, err error) {
+func (g *PushClient) PushAll(scheduleTime int, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
@@ -213,7 +324,7 @@ func (g *PushClient) PushAll(scheduleTime int, payload *CustomMessage) (resp *Re
 	if err != nil {
 		return
 	}
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -238,7 +349,7 @@ func (g *PushClient) PushAll(scheduleTime int, payload *CustomMessage) (resp *Re
 // PushAllByClient 推送给不同的客户端
 //	clientType 客户端类型，只能选1种
 //	scheduleTime 定时推送时间戳，为0时，不定时
-func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, payload *CustomMessage) (resp *Response, err error) {
+func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
@@ -257,20 +368,20 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 		//TODO:
 	}
 
-	tag := make([]*Tag, 0)
-	tag = append(tag, &Tag{
+	tag := make([]*models.Tag, 0)
+	tag = append(tag, &models.Tag{
 		Key:     "phone_type",
 		Values:  phones,
 		OptType: "or",
 	})
 
 	audience := struct {
-		Tag []*Tag `json:"tag"`
+		Tag []*models.Tag `json:"tag"`
 	}{}
 
 	audience.Tag = tag
 
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -294,7 +405,7 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 // PushSingleByCid 单推给某一个用户
 //	cid = 用户的cid信息
 //	channelType = 通道类型
-func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *CustomMessage) (resp *Response, err error) {
+func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
@@ -306,10 +417,8 @@ func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *Custo
 	audience := struct {
 		Cid []string `json:"cid"`
 	}{}
-
 	audience.Cid = []string{cid}
-
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -331,9 +440,9 @@ func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *Custo
 */
 
 // PushSingleByAlias 单推给某一个用户
-//	cid = 用户的cid信息
+//	alias = 用户的alias
 //	channelType = 通道类型
-func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *CustomMessage) (resp *Response, err error) {
+func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
@@ -346,10 +455,8 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *C
 	audience := struct {
 		Alias []string `json:"alias"`
 	}{}
-
 	audience.Alias = []string{alias}
-
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -357,7 +464,7 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *C
 		PushMessage: pushMessage,
 		PushChannel: pushChannel,
 	}
-	resp, err = pushSingleByCid(g.AppId, token, pushParam)
+	resp, err = pushSingleByAlias(g.AppId, token, pushParam)
 	if err != nil {
 		return
 	}
@@ -366,12 +473,12 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *C
 
 /*
 ===============================================================
-							按cid群推
+按cid群推
 ===============================================================
 */
 
 //PushListByCid 按cid群推消息
-func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data []*Response, err error) {
+func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) (data []*models.Response, err error) {
 	if len(cid) == 0 {
 		err = errors.New("cid长度为0")
 		return
@@ -385,7 +492,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 		return
 	}
 
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -399,23 +506,18 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 		err = fmt.Errorf("%s 保存消息失败: %s", NAME, err.Error())
 		return
 	}
-
 	//返回的taskId
 	taskId := resp.Data
-
-	resp, err = pushSingleByCid(g.AppId, token, pushParam)
-	if err != nil {
-		return
-	}
 	pageCount := getPageCount(limit, len(cid))
-	data = make([]*Response, 0)
+	data = make([]*models.Response, 0)
 
 	// 分页群推
-	for i := 1; i < pageCount; i++ {
+	for i := 1; i <= pageCount; i++ {
 		list := getSplitCid(cid, i, limit)
-		pushListParam := &PushListParam{
+		pushListParam := &models.PushListParam{
 			TaskId: taskId,
 		}
+
 		pushListParam.Audience.Cid = list //每次的推送列表
 		pushListParam.IsAsync = false     //不异步
 
@@ -424,7 +526,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 			logy.Errorf("%s 按cid群推失败: %s %s", NAME, respList.Msg, err.Error())
 		}
 		data = append(data, respList)
-		time.Sleep(time.Second * 1) //休眠1秒钟
+		time.Sleep(time.Microsecond * 500) //休眠500ms
 	}
 
 	return
@@ -432,13 +534,15 @@ func (g *PushClient) PushListByCid(cid []string, payload *CustomMessage) (data [
 
 /*
 ===============================================================
-					根据条件筛选用户推送
+根据条件筛选用户推送
 ===============================================================
 */
 
 // PushAllByCustomTag 对指定应用的符合筛选条件的用户群发推送消息。支持定时、定速功能
 //	此接口频次限制100次/天，每分钟不能超过5次(推送限制和接口执行群推共享限制)，定时推送功能需要申请开通才可以使用
-func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, payload *CustomMessage) (resp *Response, err error) {
+//	scheduleTime 定时推送时间戳，为0时，不定时
+//	customTag 内的标签是交集的关系
+func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	if len(customTag) == 0 {
 		err = errors.New("自定义标签长度为0")
 		return
@@ -452,20 +556,20 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 		return
 	}
 
-	tags := make([]*Tag, 0)
-	tags = append(tags, &Tag{
+	tags := make([]*models.Tag, 0)
+	tags = append(tags, &models.Tag{
 		Key:     "custom_tag",
 		Values:  customTag,
 		OptType: "or",
 	})
 
 	audience := struct {
-		Tag []*Tag `json:"tag"`
+		Tag []*models.Tag `json:"tag"`
 	}{}
 
 	audience.Tag = tags
 
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -482,14 +586,15 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 
 /*
 ===============================================================
-					使用标签快速推送
+使用标签快速推送
 ===============================================================
 */
 
 // PushAppByFastCustomTag 使用标签快速推送
 //	tag 为某一个标签名
 //	scheduleTime 为定时任务的时间戳
-func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payload *CustomMessage) (resp *Response, err error) {
+//	此接口需要SVIP才有使用权限
+func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	if tag == "" {
 		err = errors.New("自定义标签长度为0")
 		return
@@ -508,7 +613,7 @@ func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payloa
 	}{}
 
 	audience.FastCustomTag = tag
-	pushParam := &PushParam{
+	pushParam := &models.PushParam{
 		GroupName:   getGroupName(),
 		RequestId:   getRandString(),
 		Setting:     setting,
@@ -524,6 +629,26 @@ func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payloa
 }
 
 /*
+===============================================================
+使用标签快速推送
+===============================================================
+*/
+
+// StopTask 停止推送任务
+//	对正处于推送状态，或者未接收的消息停止下发（只支持批量推和群推任务）
+func (g *PushClient) StopTask(taskId string) (resp *models.Response, err error) {
+	if taskId == "" {
+		err = errors.New("taskid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return stopTask(g.AppId, token, taskId)
+}
+
+/*
 private
 */
 
@@ -531,7 +656,7 @@ private
 //	channelType 通道
 //	scheduleTime 定时任务的时间戳
 //	payload 消息结构体
-func getPushMessageAndChannel(channelType int, scheduleTime int, payload *CustomMessage) (pushMessage *PushMessage, pushChannel *PushChannel, setting *Setting, err error) {
+func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models.CustomMessage) (pushMessage *models.PushMessage, pushChannel *models.PushChannel, setting *models.Setting, err error) {
 	payload.Title = strings.TrimSpace(payload.Title)
 	pushInfo, err := json.Marshal(payload)
 	if err != nil {
@@ -539,7 +664,7 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *Custom
 	}
 
 	// 参数配置
-	setting = &Setting{
+	setting = &models.Setting{
 		TTL: TTL,
 	}
 	setting.Strategy.IOS = 2
@@ -550,12 +675,12 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *Custom
 
 	// 个推消息，走透传模式
 	// TODO:此处可测试是否可走 通知消息模式
-	pushMessage = &PushMessage{
+	pushMessage = &models.PushMessage{
 		Transmission: string(pushInfo),
 	}
 
 	// iOS消息配置
-	ios := &IOSChannel{
+	ios := &models.IOSChannel{
 		Payload:   string(pushInfo),
 		Type:      "notify",
 		AutoBadge: "+1",
@@ -566,10 +691,10 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *Custom
 	ios.Aps.Alert.Body = payload.Content
 
 	// android 消息配置
-	android := &AndroidChannel{}
+	android := &models.AndroidChannel{}
 
 	//走厂商的通知消息
-	android.Ups.Notification = &UPSNotification{
+	android.Ups.Notification = &models.UPSNotification{
 		Title:     payload.Title,
 		Body:      payload.Content,
 		ClickType: "intent",
@@ -605,7 +730,7 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *Custom
 	android.Ups.Options.Vv.Classification = 1
 	android.Ups.Options.Vv.NotifyType = 4
 
-	pushChannel = &PushChannel{
+	pushChannel = &models.PushChannel{
 		Android: android,
 		IOS:     ios,
 	}
@@ -623,7 +748,7 @@ func getIntent(url string) string {
 }
 
 func getRandString() string {
-	return fmt.Sprintf("%d", time.Now().UnixNano())
+	return time.Now().Format("2006-01-02-15-04-05")
 }
 
 func getGroupName() string {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/zituocn/getui-push/models"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -17,7 +18,7 @@ var (
 )
 
 // RequestAPI 请求API，返回Response
-func RequestAPI(method, url, token string, bodyByte []byte) (*Response, error) {
+func RequestAPI(method, url, token string, bodyByte []byte) (*models.Response, error) {
 	data, err := HttpRequest(method, url, token, bodyByte)
 	if err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func RequestAPI(method, url, token string, bodyByte []byte) (*Response, error) {
 		msg := gjson.GetBytes(data, "msg")
 		return nil, fmt.Errorf("%s 请求接口 %s 返回错误代码: %s 信息: %s", NAME, method+" "+url, code, msg)
 	}
-	resp := &Response{
+	resp := &models.Response{
 		Code: int(gjson.GetBytes(data, "code").Int()),
 		Msg:  gjson.GetBytes(data, "msg").String(),
 		Data: gjson.GetBytes(data, "data").String(),
@@ -50,10 +51,14 @@ func HttpRequest(method, url, token string, bodyByte []byte) ([]byte, error) {
 	req.Header.Add("Content-Type", "application/json;charset=utf-8")
 	resp, err := client.Do(req)
 	if ToDebug {
+		fmt.Printf("\n")
+		fmt.Printf("DEBUG: \n")
+		fmt.Printf("-------------------------------------------------------------------------------------------------------------------------------------------------------\n")
 		debugPrint("Request Method", method)
-		debugPrint("Request URL", url)
+		debugPrint("Request URL", u)
 		debugPrint("Request Header", req.Header)
-		debugPrint("Request Body", string(bodyByte))
+		debugPrint("Request Body", "\n\t"+string(bodyByte))
+		fmt.Printf("\n")
 	}
 	if err != nil {
 		return nil, err
@@ -67,6 +72,8 @@ func HttpRequest(method, url, token string, bodyByte []byte) ([]byte, error) {
 		debugPrint("Response Status", fmt.Sprintf("%d", resp.StatusCode))
 		debugPrint("Response Header", resp.Header)
 		debugPrint("Response Body", string(ret))
+		fmt.Printf("-------------------------------------------------------------------------------------------------------------------------------------------------------\n")
+		fmt.Printf("\n")
 	}
 	if resp != nil && resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("%s response error , status: %d body: %s", NAME, resp.StatusCode, string(ret))
@@ -78,7 +85,7 @@ func HttpRequest(method, url, token string, bodyByte []byte) ([]byte, error) {
 // makeReqBody 序列号v to json []byte
 func makeReqBody(v interface{}) ([]byte, error) {
 	if ToDebug {
-		body, err := json.MarshalIndent(v, "", "\t")
+		body, err := json.MarshalIndent(v, "	", "	")
 		if err != nil {
 			return nil, err
 		}
@@ -94,9 +101,9 @@ func makeReqBody(v interface{}) ([]byte, error) {
 
 // debugPrint 打印调试信息
 func debugPrint(prefix string, v interface{}) {
-	fmt.Printf("%s %v \n", leftText(prefix+":"), v)
+	fmt.Printf("%s: %v \n", leftText(prefix), v)
 }
 
 func leftText(s string) string {
-	return fmt.Sprintf("%15s", s)
+	return fmt.Sprintf("%20s", s)
 }

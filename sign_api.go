@@ -5,29 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zituocn/getui-push/models"
 	"time"
 )
-
-// TokenParam 获取token的参数
-type TokenParam struct {
-	Sign      string `json:"sign"`
-	Timestamp string `json:"timestamp"`
-	AppKey    string `json:"appkey"`
-}
-
-// TokenResp token返回值
-type TokenResp struct {
-	Response
-	Data struct {
-		ExpireTime string `json:"expire_time"`
-		Token      string `json:"token"`
-	} `json:"data"`
-}
 
 // getToken 获取过推token
 func getToken(appId, appKey, masterSecret string) (token string, err error) {
 	sign, timestamp := signature(appKey, masterSecret)
-	param := &TokenParam{
+	param := &models.TokenParam{
 		Sign:      sign,
 		Timestamp: fmt.Sprintf("%d", timestamp),
 		AppKey:    appKey,
@@ -40,7 +25,7 @@ func getToken(appId, appKey, masterSecret string) (token string, err error) {
 	if err != nil {
 		return
 	}
-	resp := new(TokenResp)
+	resp := new(models.TokenResp)
 	err = json.Unmarshal(b, &resp)
 	if resp.Data.Token == "" {
 		err = errors.New("返回的token为空")

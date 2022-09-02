@@ -1,4 +1,4 @@
-package getuipush
+package models
 
 // AliasParam 别名绑定参数
 type AliasParam struct {

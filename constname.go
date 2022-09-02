@@ -2,7 +2,7 @@ package getuipush
 
 const (
 	//APIURL 服务器地址
-	APIURL string = "https://resetapi.getui.com/v2/"
+	APIURL string = "https://restapi.getui.com/v2/"
 
 	// NAME 日志中的前缀
 	NAME = "[个推]"

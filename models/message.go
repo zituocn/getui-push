@@ -1,4 +1,4 @@
-package getuipush
+package models
 
 // Setting 配置
 // @https://docs.getui.com/getui/server/rest_v2/common_args/?id=doc-title-6
@@ -107,9 +107,9 @@ type Revoke struct {
 
 // PushMessage 在线个推通道消息内容
 type PushMessage struct {
-	Notification *Notification `json:"notification"` //通知消息内容，仅支持安卓系统，iOS系统不展示个推通知消息，与transmission、revoke三选一，都填写时报错
-	Transmission string        `json:"transmission"` //纯透传消息内容，安卓和iOS均支持，与notification、revoke 三选一，都填写时报错，长度 ≤ 3072
-	Revoke       *Revoke       `json:"revoke"`       //撤回消息时使用(仅撤回个推通道消息)，与notification、transmission三选一，都填写时报错(消息撤回请勿填写策略参数)
+	Notification *Notification `json:"notification,omitempty"` //通知消息内容，仅支持安卓系统，iOS系统不展示个推通知消息，与transmission、revoke三选一，都填写时报错
+	Transmission string        `json:"transmission,omitempty"` //纯透传消息内容，安卓和iOS均支持，与notification、revoke 三选一，都填写时报错，长度 ≤ 3072
+	Revoke       *Revoke       `json:"revoke,omitempty"`       //撤回消息时使用(仅撤回个推通道消息)，与notification、transmission三选一，都填写时报错(消息撤回请勿填写策略参数)
 }
 
 // PushParam 推送上报参数
