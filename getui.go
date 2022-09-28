@@ -16,9 +16,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/zituocn/getui-push/models"
 	"strings"
 	"time"
+
+	"github.com/zituocn/getui-push/models"
 
 	"github.com/zituocn/gow/lib/goredis"
 	"github.com/zituocn/gow/lib/logy"
@@ -216,6 +217,13 @@ func (g *PushClient) BindTags(cid string, param *models.CustomTagsParam) (resp *
 */
 
 // SearchTags 查询某个用户已经绑定的标签
+/*
+{
+  "7399c780f73ac4046d930dd2b4edf3b4": [
+    "VIP用户 文科 手机登录 本科二批 iOS guangdong"
+  ]
+}
+*/
 func (g *PushClient) SearchTags(cid string) (resp *models.Response, err error) {
 	if cid == "" {
 		err = errors.New("cid为空")
@@ -230,6 +238,14 @@ func (g *PushClient) SearchTags(cid string) (resp *models.Response, err error) {
 
 // SearchStatus 查询某个用户的状态，是否在线，上次在线时间等
 //	根据cid查询
+/*
+{
+  "294d4da8b52d909ed30d261baf91d2d2": {
+    "last_login_time": "1663897775596",
+    "status": "offline"
+  }
+}
+*/
 func (g *PushClient) SearchStatus(cid string) (resp *models.Response, err error) {
 	if cid == "" {
 		err = errors.New("cid为空")
@@ -244,6 +260,23 @@ func (g *PushClient) SearchStatus(cid string) (resp *models.Response, err error)
 
 // SearchUser 查询用户信息
 //	根据cid查询
+/*
+{
+  "validCids": {
+    "294d4da8b52d909ed30d261baf91d2d2": {
+      "client_app_id": "7a4W8IrA3rAHxlJunzfTe",
+      "package_name": "ymzy-dream-iOS",
+      "device_token": "c2a73ad014d19111fef4454ebe19c811fd9c994f1e9f767318667adf9d0bbb69,,",
+      "phone_type": 2,
+      "phone_model": "iPhone14,2",
+      "notification_switch": true,
+      "create_time": "2022-03-03 14:10:46",
+      "login_freq": 21,
+      "brand": "iphone"
+    }
+  }
+}
+*/
 func (g *PushClient) SearchUser(cid string) (resp *models.Response, err error) {
 	if cid == "" {
 		err = errors.New("cid为空")
@@ -262,6 +295,9 @@ func (g *PushClient) SearchUser(cid string) (resp *models.Response, err error) {
 
 // SearchAliasByCid 按cid查别名
 //	即这台设备上登录过哪些帐号
+/*
+{"alias":"255617"}
+*/
 func (g *PushClient) SearchAliasByCid(cid string) (resp *models.Response, err error) {
 	if cid == "" {
 		err = errors.New("cid为空")
@@ -276,6 +312,14 @@ func (g *PushClient) SearchAliasByCid(cid string) (resp *models.Response, err er
 
 // SearchCidByAlias 按alias查cid
 //	即这个alias绑定过哪些设备
+/*
+{
+  "cid": [
+    "1fb427ab8f93a6de4655f4a15add51d2",
+    "699214926b118e9512a9330423fbaf5f"
+  ]
+}
+*/
 func (g *PushClient) SearchCidByAlias(alias string) (resp *models.Response, err error) {
 	if alias == "" {
 		err = errors.New("别名为空")
@@ -477,7 +521,8 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *m
 ===============================================================
 */
 
-//PushListByCid 按cid群推消息
+// PushListByCid 按cid群推消息
+//	当cid长度大于1000时，会分页循环进行推送
 func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) (data []*models.Response, err error) {
 	if len(cid) == 0 {
 		err = errors.New("cid长度为0")
@@ -551,7 +596,7 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(1, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -603,7 +648,7 @@ func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payloa
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(1, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -669,6 +714,11 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models
 	}
 	setting.Strategy.IOS = 2
 	setting.Strategy.Default = 1
+	setting.Strategy.HW = 1
+	setting.Strategy.OP = 1
+	setting.Strategy.VV = 1
+	setting.Strategy.XM = 1
+
 	if scheduleTime > 0 {
 		setting.ScheduleTime = scheduleTime
 	}
@@ -678,6 +728,21 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models
 	pushMessage = &models.PushMessage{
 		Transmission: string(pushInfo),
 	}
+
+	// 个推消息，走通知模式
+	// pushMessage = &models.PushMessage{
+	// 	Notification: &models.Notification{
+	// 		Title: payload.Title,
+	// 		Body:  payload.Content,
+	// 		//LogoUrl:      "https://lib.ymzy.cn/ymzy/wap/static/images/down_app/logo.png",
+	// 		ClickType:    "intent",
+	// 		Intent:       getIntent(payload.Url),
+	// 		NotifyId:     uint(time.Now().Unix()),
+	// 		ChannelLevel: 4,
+
+	// 		BadgeAddNum: 1,
+	// 	},
+	// }
 
 	// iOS消息配置
 	ios := &models.IOSChannel{
@@ -704,31 +769,71 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models
 
 	// android 离线推送通道
 	// 以下为厂商配置
-	android.Ups.Options.All.Channel = "yuanmeng_push"
 
-	//华为 OK except p10
-	android.Ups.Options.Hw = map[string]interface{}{
-		"/message/android/notification/channel_id": "yuanmeng_push",
-		"/message/android/notification/visibility": "PUBLIC",
-		"/message/android/notification/importance": "HIGH",
-	}
-
-	// 小米
-	android.Ups.Options.Xm = map[string]interface{}{
-		"/extra.channel_id": "pre213",
-	}
-
-	// oppo
+	// 营销/全推类消息
 	if channelType == PublicChannel {
-		android.Ups.Options.Op.ChannelId = "yuanmeng_push"
-	}
-	if channelType == PrivateChannel {
-		android.Ups.Options.Op.ChannelId = "yuanmeng_push_im"
-	}
+		android.Ups.Options.All.Channel = "yuanmeng_push"
 
-	//vivo
-	android.Ups.Options.Vv.Classification = 1
-	android.Ups.Options.Vv.NotifyType = 4
+		//华为 OK except p10
+		android.Ups.Options.Hw = map[string]interface{}{
+			"/message/android/notification/default_sound": true,
+			"/message/android/notification/channel_id":    "yuanmeng_push",
+			"/message/android/notification/visibility":    "PUBLIC",
+			"/message/android/notification/importance":    "LOW",
+		}
+
+		//荣耀
+		android.Ups.Options.Ho = map[string]interface{}{
+			"/android/notification/importance": "LOW",
+		}
+
+		// oppo
+		android.Ups.Options.Op = map[string]interface{}{
+			"/channel_id": "yuanmeng_push",
+		}
+
+		// 小米公共
+		android.Ups.Options.Xm = map[string]interface{}{
+			"/extra.channel_id": "pre213",
+			"notifyType":        -1,
+		}
+
+		//vivo
+		android.Ups.Options.Vv.Classification = 0
+		android.Ups.Options.Vv.NotifyType = 4
+	}
+	//聊天、即时类消息
+	if channelType == PrivateChannel {
+		android.Ups.Options.All.Channel = "yuanmeng_push_im"
+
+		//华为 OK except p10
+		android.Ups.Options.Hw = map[string]interface{}{
+			"/message/android/notification/default_sound": true,
+			"/message/android/notification/channel_id":    "yuanmeng_push_im",
+			"/message/android/notification/visibility":    "PUBLIC",
+			"/message/android/notification/importance":    "NORMAL",
+		}
+
+		//荣耀
+		android.Ups.Options.Ho = map[string]interface{}{
+			"/android/notification/importance": "NORMAL",
+		}
+
+		// oppo
+		android.Ups.Options.Op = map[string]interface{}{
+			"/channel_id": "yuanmeng_push_im",
+		}
+
+		// 小米聊天
+		android.Ups.Options.Xm = map[string]interface{}{
+			"/extra.channel_id": "high_system",
+			"notifyType":        -1,
+		}
+
+		//vivo
+		android.Ups.Options.Vv.Classification = 1
+		android.Ups.Options.Vv.NotifyType = 4
+	}
 
 	pushChannel = &models.PushChannel{
 		Android: android,

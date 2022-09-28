@@ -9,17 +9,23 @@ package models
 // 3: 表示该消息只通过个推通道下发，不考虑用户是否在线；
 // 4: 表示该消息优先从厂商通道下发，若消息内容在厂商通道代发失败后会从个推通道下发。
 type Setting struct {
-	TTL      int `json:"ttl"` //消息离线时间设置，单位毫秒，-1表示不设离线，-1 ～ 3 * 24 * 3600 * 1000(3天)之间
+	TTL int `json:"ttl"` //消息离线时间设置，单位毫秒，-1表示不设离线，-1 ～ 3 * 24 * 3600 * 1000(3天)之间
+
+	// 厂商通道策略 1~4
+	//	1:个推通道优先，在线走个推，离线走厂商
+	//	2:在线或离线都走厂商
+	//	3:在线或离线都通过个推通道下发；
+	//  4: 厂商优先，优先走厂商，失败时走个推通道
 	Strategy struct {
 		Default int `json:"default"`
-		IOS     int `json:"ios"`
-		ST      int `json:"st"` //锤子/坚果
-		HW      int `json:"hw"` //华为
-		XM      int `json:"xm"` //小米
-		VV      int `json:"vv"` //vivo
-		MZ      int `json:"mz"` //魅族
-		OP      int `json:"op"` //oppo
-	} `json:"strategy"` //厂商通道策略 1~4
+		IOS     int `json:"ios"` //苹果
+		ST      int `json:"st"`  //锤子/坚果
+		HW      int `json:"hw"`  //华为
+		XM      int `json:"xm"`  //小米
+		VV      int `json:"vv"`  //vivo
+		MZ      int `json:"mz"`  //魅族
+		OP      int `json:"op"`  //oppo
+	} `json:"strategy"` //
 	Speed        int `json:"speed"`         //定速推送，例如100，个推控制下发速度在100条/秒左右，0表示不限速
 	ScheduleTime int `json:"schedule_time"` //定时推送时间，必须是7天内的时间，格式：毫秒时间戳
 }
@@ -31,15 +37,16 @@ type Setting struct {
 type Notification struct {
 	Title        string `json:"title"`         //标题
 	Body         string `json:"body"`          //内容
-	ClickType    string `json:"click_type"`    //intent:打开应用内特定页；url:打开网页；payload:自定义消息内容启动应用;payload_custom:自定义消息不启动应用;startapp:打开应用首页；none:纯通知，无动作；
-	Intent       string `json:"intent"`        //client_type为intent时填写；
-	Url          string `json:"url"`           //client_type为url时填写
-	Payload      string `json:"payload"`       //client_type为payload相关时
-	NotifyId     uint   `json:"notify_id"`     //覆盖任务时，两条消息的notify_id相同，会覆盖上一条；
+	LogoUrl      string `json:"logo_url"`      //通知图标URL地址
 	BadgeAddNum  uint   `json:"badge_add_num"` //必须大于0；举例：角标数字配置1，应用之前角标数为2，发送此角标消息后，应用角标数显示为3
 	ChannelId    string `json:"channel_id"`    //通知渠道id
 	ChannelName  string `json:"channel_name"`  //通知渠道名称
 	ChannelLevel int    `json:"channel_level"` //通知渠道重要性：0 1 2 3 4
+	ClickType    string `json:"click_type"`    //intent:打开应用内特定页；url:打开网页；payload:自定义消息内容启动应用;payload_custom:自定义消息不启动应用;startapp:打开应用首页；none:纯通知，无动作；
+	Intent       string `json:"intent"`        //client_type为intent时填写；
+	Url          string `json:"url"`           //client_type为url时填写
+	Payload      string `json:"payload"`       //client_type为payload/payload_custom时必填
+	NotifyId     uint   `json:"notify_id"`     //覆盖任务时，两条消息的notify_id相同，会覆盖上一条；
 }
 
 // UPSNotification android厂商的 notification
@@ -68,14 +75,13 @@ type AndroidChannel struct {
 				Channel string `json:"channel"`
 			} `json:"ALL"`
 			Hw map[string]interface{} `json:"HW"`
-			Op struct {
-				ChannelId string `json:"channel_id"`
-			} `json:"OP"`
+			Op map[string]interface{} `json:"OP"`
 			Vv struct {
 				Classification int `json:"classification"` //  0代表运营消息，1代表系统消息
 				NotifyType     int `json:"notifyType"`     //通知类型 1:无，2:响铃，3:振动，4:响铃和振动 注意：只对Android 8.0及以下系统有效
 			} `json:"VV"`
 			Xm map[string]interface{} `json:"XM"`
+			Ho map[string]interface{} `json:"HO"`
 		} `json:"options"` //第三方厂商扩展内容
 	} `json:"ups"`
 }
