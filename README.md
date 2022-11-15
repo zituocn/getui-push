@@ -1,8 +1,13 @@
-# getui push api
+# getui push sdk
 
-* golang版本的个推API v2，仅限ymzy使用；
+```
+* golang版本的个推API V2，限内部使用；
 * 其他用户需要使用，请根据自己情况，修改 `getPushMessageAndChannel`和`getIntent`函数中的配置；
+```
 
+*个推官方文档*
+
+https://docs.getui.com/getui/server/rest_v2/push/
 
 
 ```sh
@@ -113,3 +118,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) 
 func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, payload *models.CustomMessage) (resp *models.Response, err error) 
 ```
 
+### 第三方包
+
+* github.com/tidwall/gjson 
+* github.com/zituocn/gow/lib/logy
