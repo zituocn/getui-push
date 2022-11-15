@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-// getToken 获取过推token
+// getToken 获取个推token
+//	返回token和可能的错误
 func getToken(appId, appKey, masterSecret string) (token string, err error) {
 	sign, timestamp := signature(appKey, masterSecret)
 	param := &models.TokenParam{
