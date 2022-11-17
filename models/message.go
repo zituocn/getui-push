@@ -142,7 +142,7 @@ type CustomMessage struct {
 type Tag struct {
 	Key     string   `json:"key"`
 	Values  []string `json:"values"`
-	OptType string   `json:"opt_type"`
+	OptType string   `json:"opt_type"` //or(或)、and(与)、not(非)，values间的交并补操作
 }
 
 // PushListParam 按cid或alias群推时的结构体
