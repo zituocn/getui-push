@@ -36,6 +36,7 @@ var (
 )
 
 // PushConfig 配置
+//
 //	从个推获取
 type PushConfig struct {
 	AppId        string
@@ -45,6 +46,7 @@ type PushConfig struct {
 }
 
 // PushStore token存储配置
+//
 //	redis配置信息
 type PushStore struct {
 	Host     string //redis host
@@ -100,6 +102,7 @@ func NewPushClient(conf *PushConfig, store *PushStore, toDebug bool) (client *Pu
 }
 
 // GetToken 获取token
+//
 //	从redis中或api中获取
 func (g *PushClient) GetToken() (token string, err error) {
 	rdb := goredis.GetRDB()
@@ -146,6 +149,7 @@ func (g *PushClient) BindAlias(param *models.Alias) (resp *models.Response, err 
 }
 
 // UnBindAlias 解绑别名
+//
 //	cid与alias成对出现
 func (g *PushClient) UnBindAlias(param *models.Alias) (resp *models.Response, err error) {
 	if param == nil || param.Cid == "" {
@@ -177,6 +181,19 @@ func (g *PushClient) UnBindAllAlias(alias string) (resp *models.Response, err er
 	return unBindAllAlias(g.AppId, token, alias)
 }
 
+// GetUserCount 查询用户总量
+func (g *PushClient) GetUserCount(tags []*models.Tag) (resp *models.Response, err error) {
+	if len(tags) <= 0 {
+		err = errors.New("tag为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return getUserCount(g.AppId, token, tags)
+}
+
 /*
 ===============================================================
 绑定自定义标签
@@ -184,6 +201,7 @@ func (g *PushClient) UnBindAllAlias(alias string) (resp *models.Response, err er
 */
 
 // BindTags 一个用户绑定一批标签
+//
 //	cid表示用户
 func (g *PushClient) BindTags(cid string, param *models.CustomTagsParam) (resp *models.Response, err error) {
 	if cid == "" {
@@ -333,6 +351,7 @@ func (g *PushClient) SearchCidByAlias(alias string) (resp *models.Response, err 
 }
 
 // SearchTaskDetailByCid 可以查询某任务下某cid的具体实时推送路径情况
+//
 //	用于跟踪某个用户的消息到达情况
 //	此接口需要SVIP权限，暂时不可用
 func (g *PushClient) SearchTaskDetailByCid(cid, taskId string) (resp *models.TaskDetailResp, err error) {
@@ -358,6 +377,7 @@ func (g *PushClient) SearchTaskDetailByCid(cid, taskId string) (resp *models.Tas
 */
 
 // PushAll 推送给所有人
+//
 //	scheduleTime 定时推送时间戳，为0时，不定时
 func (g *PushClient) PushAll(scheduleTime int, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
@@ -391,6 +411,7 @@ func (g *PushClient) PushAll(scheduleTime int, payload *models.CustomMessage) (r
 */
 
 // PushAllByClient 推送给不同的客户端
+//
 //	clientType 客户端类型，只能选1种
 //	scheduleTime 定时推送时间戳，为0时，不定时
 func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, payload *models.CustomMessage) (resp *models.Response, err error) {
@@ -447,6 +468,7 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 */
 
 // PushSingleByCid 单推给某一个用户
+//
 //	cid = 用户的cid信息
 //	channelType = 通道类型
 func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *models.CustomMessage) (resp *models.Response, err error) {
@@ -484,6 +506,7 @@ func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *model
 */
 
 // PushSingleByAlias 单推给某一个用户
+//
 //	alias = 用户的alias
 //	channelType = 通道类型
 func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *models.CustomMessage) (resp *models.Response, err error) {
@@ -522,6 +545,7 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *m
 */
 
 // PushListByCid 按cid群推消息
+//
 //	当cid长度大于1000时，会分页循环进行推送
 func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) (data []*models.Response, err error) {
 	if len(cid) == 0 {
@@ -584,6 +608,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) 
 */
 
 // PushAllByCustomTag 对指定应用的符合筛选条件的用户群发推送消息。支持定时、定速功能
+//
 //	此接口频次限制100次/天，每分钟不能超过5次(推送限制和接口执行群推共享限制)，定时推送功能需要申请开通才可以使用
 //	scheduleTime 定时推送时间戳，为0时，不定时
 //	customTag 内的标签是交集的关系
@@ -636,6 +661,7 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 */
 
 // PushAppByFastCustomTag 使用标签快速推送
+//
 //	tag 为某一个标签名
 //	scheduleTime 为定时任务的时间戳
 //	此接口需要SVIP才有使用权限
@@ -680,6 +706,7 @@ func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payloa
 */
 
 // StopTask 停止推送任务
+//
 //	对正处于推送状态，或者未接收的消息停止下发（只支持批量推和群推任务）
 func (g *PushClient) StopTask(taskId string) (resp *models.Response, err error) {
 	if taskId == "" {
@@ -698,6 +725,7 @@ private
 */
 
 // getPushMessageAndChannel 构造消息
+//
 //	channelType 通道
 //	scheduleTime 定时任务的时间戳
 //	payload 消息结构体

@@ -18,6 +18,7 @@ func bindAlias(appId, token string, param *models.AliasParam) (*models.Response,
 }
 
 // unBindAlias 解绑别名
+//
 //	cid与alias成对出现
 func unBindAlias(appId, token string, param *models.AliasParam) (*models.Response, error) {
 	bodyByte, err := makeReqBody(param)
@@ -41,6 +42,7 @@ func unBindAllAlias(appId, token, alias string) (*models.Response, error) {
 }
 
 // bindTags 给一个cid，绑定多个标签
+//
 //	此接口对单个cid有频控限制，每天只能修改一次，最多设置100个标签；单个标签长度最大为32字符，标签总长度最大为512个字符
 func bindTags(appId, token, cid string, param *models.CustomTagsParam) (*models.Response, error) {
 	bodyByte, err := makeReqBody(param)
@@ -55,6 +57,7 @@ func bindTags(appId, token, cid string, param *models.CustomTagsParam) (*models.
 }
 
 // searchTags 查询某个用户已绑定的标签
+//
 //	可用于运营后台查询
 func searchTags(appId, token, cid string) (*models.Response, error) {
 	resp, err := RequestAPI("GET", appId+"/user/custom_tag/cid/"+cid, token, nil)
@@ -65,6 +68,7 @@ func searchTags(appId, token, cid string) (*models.Response, error) {
 }
 
 // searchStatus 查询某个用户的状态，是否在线，上次在线时间等
+//
 //	根据cid查询
 func searchStatus(appId, token, cid string) (*models.Response, error) {
 	resp, err := RequestAPI("GET", appId+"/user/status/"+cid, token, nil)
@@ -76,6 +80,7 @@ func searchStatus(appId, token, cid string) (*models.Response, error) {
 }
 
 // searchUser 查询用户信息
+//
 //	根据cid查询
 func searchUser(appId, token, cid string) (*models.Response, error) {
 	resp, err := RequestAPI("GET", appId+"/user/detail/"+cid, token, nil)
@@ -86,6 +91,7 @@ func searchUser(appId, token, cid string) (*models.Response, error) {
 }
 
 // searchAliasByCid 按cid查询别名
+//
 //	即这台设备上登录过哪些帐号
 func searchAliasByCid(appId, token, cid string) (*models.Response, error) {
 	resp, err := RequestAPI("GET", appId+"/user/alias/cid/"+cid, token, nil)
@@ -96,9 +102,20 @@ func searchAliasByCid(appId, token, cid string) (*models.Response, error) {
 }
 
 // searchCidByAlias 按alias查cid
+//
 //	即这个alias绑定过哪些设备
 func searchCidByAlias(appId, token, alias string) (*models.Response, error) {
 	resp, err := RequestAPI("GET", appId+"/user/cid/alias/"+alias, token, nil)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// getUserCount 获取用户总量
+func getUserCount(appId, token string, Tag []*models.Tag) (*models.Response, error) {
+	bodyByte, err := makeReqBody(Tag)
+	resp, err := RequestAPI("POST", appId+"/user/count", token, bodyByte)
 	if err != nil {
 		return nil, err
 	}
