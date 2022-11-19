@@ -2,6 +2,7 @@ package getuipush
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/zituocn/getui-push/models"
@@ -42,6 +43,7 @@ func HttpRequest(method, url, token string, bodyByte []byte) ([]byte, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
+	client.Transport = getDefaultTransport()
 	body := bytes.NewBuffer(bodyByte)
 	req, err := http.NewRequest(method, u, body)
 	if err != nil {
@@ -106,4 +108,11 @@ func debugPrint(prefix string, v interface{}) {
 
 func leftText(s string) string {
 	return fmt.Sprintf("%20s", s)
+}
+
+func getDefaultTransport() *http.Transport {
+	return &http.Transport{
+		MaxIdleConns:    100,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 }

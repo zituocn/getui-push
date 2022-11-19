@@ -654,6 +654,45 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 	return
 }
 
+// PushAllByLogicTags 对指定应用的符合筛选条件的用户群发推送消息。支持定时、定速功能
+//	此接口频次限制100次/天，每分钟不能超过5次(推送限制和接口执行群推共享限制)，定时推送功能需要申请开通才可以使用
+//	scheduleTime 定时推送时间戳，为0时，不定时
+//	tags为[]*models.Tag，需要自己构建tag表达式
+//	see @https://docs.getui.com/getui/server/rest_v2/push/
+func (g *PushClient) PushAllByLogicTags(scheduleTime int, tags []*models.Tag, payload *models.CustomMessage) (resp *models.Response, err error) {
+	if len(tags) == 0 {
+		err = errors.New("标签表达式长度为0")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	if err != nil {
+		return
+	}
+	audience := struct {
+		Tag []*models.Tag `json:"tag"`
+	}{}
+
+	audience.Tag = tags
+
+	pushParam := &models.PushParam{
+		GroupName:   getGroupName(),
+		RequestId:   getRandString(),
+		Setting:     setting,
+		Audience:    audience,
+		PushMessage: pushMessage,
+		PushChannel: pushChannel,
+	}
+	resp, err = pushAppByTag(g.AppId, token, pushParam)
+	if err != nil {
+		return
+	}
+	return
+}
+
 /*
 ===============================================================
 使用标签快速推送
