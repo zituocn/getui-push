@@ -31,6 +31,7 @@ type Setting struct {
 }
 
 // Notification 通知消息
+//
 //	在线个推通道消息内容
 //	仅支持安卓系统，iOS系统不展示个推通道下发的通知消息
 //	@https://docs.getui.com/getui/server/rest_v2/common_args/?id=doc-title-6
@@ -50,7 +51,7 @@ type Notification struct {
 }
 
 // UPSNotification android厂商的 notification
-//client_type:
+// client_type:
 // 点击通知后续动作,
 // 目前支持以下后续动作，
 // intent：打开应用内特定页面(厂商都支持)，
@@ -136,6 +137,7 @@ type CustomMessage struct {
 	Url          string `json:"url"`
 	Time         int    `json:"time"`
 	IsShowNotify string `json:"is_show_notify"`
+	MessageType  int64  `json:"message_type"`
 }
 
 // Tag 自定义标签
