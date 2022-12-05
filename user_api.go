@@ -114,7 +114,11 @@ func searchCidByAlias(appId, token, alias string) (*models.Response, error) {
 
 // getUserCount 获取用户总量
 func getUserCount(appId, token string, Tag []*models.Tag) (*models.Response, error) {
-	bodyByte, err := makeReqBody(Tag)
+	pushTag := struct {
+		Tag []*models.Tag `json:"tag"`
+	}{}
+	pushTag.Tag = Tag
+	bodyByte, err := makeReqBody(pushTag)
 	resp, err := RequestAPI("POST", appId+"/user/count", token, bodyByte)
 	if err != nil {
 		return nil, err
