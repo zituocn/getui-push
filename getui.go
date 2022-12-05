@@ -370,6 +370,21 @@ func (g *PushClient) SearchTaskDetailByCid(cid, taskId string) (resp *models.Tas
 	return searchTaskDetailByCid(g.AppId, token, cid, taskId)
 }
 
+// ReportPushTask 获取推送结果（含自定义事件）可查询消息可下发数、下发数，接收数、展示数、点击数等结果
+//
+//	用于跟踪某个用户的消息到达情况
+func (g *PushClient) ReportPushTask(taskId string) (resp *models.Response, err error) {
+	if taskId == "" {
+		err = errors.New("taskid为空")
+		return
+	}
+	token, err := g.GetToken()
+	if err != nil {
+		return
+	}
+	return reportPushTask(g.AppId, token, taskId)
+}
+
 /*
 ===============================================================
 推给所有人
@@ -655,6 +670,7 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 }
 
 // PushAllByLogicTags 对指定应用的符合筛选条件的用户群发推送消息。支持定时、定速功能
+//
 //	此接口频次限制100次/天，每分钟不能超过5次(推送限制和接口执行群推共享限制)，定时推送功能需要申请开通才可以使用
 //	scheduleTime 定时推送时间戳，为0时，不定时
 //	tags为[]*models.Tag，需要自己构建tag表达式
