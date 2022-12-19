@@ -32,7 +32,7 @@ var (
 	ctx = context.Background()
 
 	// expTime token 在redis中的过期时间
-	expTime = time.Now().Add(time.Hour * 20).Unix()
+	expTime = time.Hour * 20
 )
 
 // PushConfig 配置
