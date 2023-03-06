@@ -394,12 +394,12 @@ func (g *PushClient) ReportPushTask(taskId string) (resp *models.Response, err e
 // PushAll 推送给所有人
 //
 //	scheduleTime 定时推送时间戳，为0时，不定时
-func (g *PushClient) PushAll(scheduleTime int, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushAll(msgType, scheduleTime int, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -429,12 +429,12 @@ func (g *PushClient) PushAll(scheduleTime int, payload *models.CustomMessage) (r
 //
 //	clientType 客户端类型，只能选1种
 //	scheduleTime 定时推送时间戳，为0时，不定时
-func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushAllByClient(msgType, scheduleTime int, clientType ClientType, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -486,12 +486,12 @@ func (g *PushClient) PushAllByClient(scheduleTime int, clientType ClientType, pa
 //
 //	cid = 用户的cid信息
 //	channelType = 通道类型
-func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushSingleByCid(msgType, channelType int, cid string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(channelType, 0, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, channelType, 0, payload)
 	if err != nil {
 		return
 	}
@@ -524,12 +524,12 @@ func (g *PushClient) PushSingleByCid(channelType int, cid string, payload *model
 //
 //	alias = 用户的alias
 //	channelType = 通道类型
-func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushSingleByAlias(msgType, channelType int, alias string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	token, err := g.GetToken()
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(channelType, 0, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, channelType, 0, payload)
 	if err != nil {
 		return
 	}
@@ -562,7 +562,7 @@ func (g *PushClient) PushSingleByAlias(channelType int, alias string, payload *m
 // PushListByCid 按cid群推消息
 //
 //	当cid长度大于1000时，会分页循环进行推送
-func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) (data []*models.Response, err error) {
+func (g *PushClient) PushListByCid(msgType int, cid []string, payload *models.CustomMessage) (data []*models.Response, err error) {
 	if len(cid) == 0 {
 		err = errors.New("cid长度为0")
 		return
@@ -571,7 +571,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) 
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, 0, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, 0, payload)
 	if err != nil {
 		return
 	}
@@ -606,8 +606,9 @@ func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) 
 		pushListParam.IsAsync = false     //不异步
 
 		respList, err := pushListByCid(g.AppId, token, pushListParam)
+
 		if err != nil {
-			logy.Errorf("%s 按cid群推失败: %s %s", NAME, respList.Msg, err.Error())
+			logy.Errorf("%s 按cid群推失败: %s", NAME, err.Error())
 		}
 		data = append(data, respList)
 		time.Sleep(time.Microsecond * 500) //休眠500ms
@@ -627,7 +628,7 @@ func (g *PushClient) PushListByCid(cid []string, payload *models.CustomMessage) 
 //	此接口频次限制100次/天，每分钟不能超过5次(推送限制和接口执行群推共享限制)，定时推送功能需要申请开通才可以使用
 //	scheduleTime 定时推送时间戳，为0时，不定时
 //	customTag 内的标签是交集的关系
-func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushAllByCustomTag(msgType, scheduleTime int, customTag []string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	if len(customTag) == 0 {
 		err = errors.New("自定义标签长度为0")
 		return
@@ -636,7 +637,7 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -675,7 +676,7 @@ func (g *PushClient) PushAllByCustomTag(scheduleTime int, customTag []string, pa
 //	scheduleTime 定时推送时间戳，为0时，不定时
 //	tags为[]*models.Tag，需要自己构建tag表达式
 //	see @https://docs.getui.com/getui/server/rest_v2/push/
-func (g *PushClient) PushAllByLogicTags(scheduleTime int, tags []*models.Tag, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushAllByLogicTags(msgType, scheduleTime int, tags []*models.Tag, payload *models.CustomMessage) (resp *models.Response, err error) {
 	if len(tags) == 0 {
 		err = errors.New("标签表达式长度为0")
 		return
@@ -684,7 +685,7 @@ func (g *PushClient) PushAllByLogicTags(scheduleTime int, tags []*models.Tag, pa
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -720,7 +721,7 @@ func (g *PushClient) PushAllByLogicTags(scheduleTime int, tags []*models.Tag, pa
 //	tag 为某一个标签名
 //	scheduleTime 为定时任务的时间戳
 //	此接口需要SVIP才有使用权限
-func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payload *models.CustomMessage) (resp *models.Response, err error) {
+func (g *PushClient) PushAppByFastCustomTag(msgType, scheduleTime int, tag string, payload *models.CustomMessage) (resp *models.Response, err error) {
 	if tag == "" {
 		err = errors.New("自定义标签长度为0")
 		return
@@ -729,7 +730,7 @@ func (g *PushClient) PushAppByFastCustomTag(scheduleTime int, tag string, payloa
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(PublicChannel, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, PublicChannel, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -782,9 +783,10 @@ private
 // getPushMessageAndChannel 构造消息
 //
 //	channelType 通道
+//	xmMsgType 小米专用-指定的消息类型
 //	scheduleTime 定时任务的时间戳
 //	payload 消息结构体
-func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models.CustomMessage) (pushMessage *models.PushMessage, pushChannel *models.PushChannel, setting *models.Setting, err error) {
+func getPushMessageAndChannel(xmMsgType, channelType int, scheduleTime int, payload *models.CustomMessage) (pushMessage *models.PushMessage, pushChannel *models.PushChannel, setting *models.Setting, err error) {
 	payload.Title = strings.TrimSpace(payload.Title)
 	pushInfo, err := json.Marshal(payload)
 	if err != nil {
@@ -875,16 +877,19 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models
 			"/channel_id": "yuanmeng_push",
 		}
 
-		// 小米公共
-		android.Ups.Options.Xm = map[string]interface{}{
-			"/extra.channel_id": "pre213",
-			"notifyType":        -1,
-		}
+		//// 小米公共
+		//android.Ups.Options.Xm = map[string]interface{}{
+		//	"/extra.channel_id": "pre213",
+		//	"notifyType":        -1,
+		//}
+
+		logy.Errorf("小米新的channel")
 
 		//vivo
 		android.Ups.Options.Vv.Classification = 0
 		android.Ups.Options.Vv.NotifyType = 4
 	}
+
 	//聊天、即时类消息
 	if channelType == PrivateChannel {
 		android.Ups.Options.All.Channel = "yuanmeng_push_im"
@@ -908,14 +913,28 @@ func getPushMessageAndChannel(channelType int, scheduleTime int, payload *models
 		}
 
 		// 小米聊天
-		android.Ups.Options.Xm = map[string]interface{}{
-			"/extra.channel_id": "high_system",
-			"notifyType":        -1,
-		}
+		//android.Ups.Options.Xm = map[string]interface{}{
+		//	"/extra.channel_id": "high_system",
+		//	"notifyType":        -1,
+		//}
 
 		//vivo
 		android.Ups.Options.Vv.Classification = 1
 		android.Ups.Options.Vv.NotifyType = 4
+	}
+
+	//根据小米最新的消息推送规定，需要按照指定的消息类型推送，不再仅分为 公用消息 和 聊天消息
+	if xmMsgType > 0 {
+		var xmChannelId string = "103533" //内容资讯的channelId，给一个默认的channelId
+		channelId := XiaoMiMsgType(xmMsgType).GetMsgChannelId()
+		if channelId != "" {
+			xmChannelId = channelId
+		}
+		logy.Errorf("小米推送channelID:%v", xmChannelId)
+		android.Ups.Options.Xm = map[string]interface{}{
+			"/extra.channel_id": xmChannelId,
+			"notifyType":        -1,
+		}
 	}
 
 	pushChannel = &models.PushChannel{

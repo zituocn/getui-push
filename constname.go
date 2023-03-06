@@ -17,6 +17,30 @@ const (
 	limit = 1000
 )
 
+type XiaoMiMsgType int
+
+const (
+	ArticleMsg XiaoMiMsgType = iota + 1
+	AlgorithmReCommendMsg
+	AttendRecommendMsg
+	PlatformActionMsg
+	UserAccountMsg
+	InstantMsg
+)
+
+var xiaomiMagTypeChannelId = map[XiaoMiMsgType]string{
+	ArticleMsg:            "103533",
+	AlgorithmReCommendMsg: "103779",
+	AttendRecommendMsg:    "103777",
+	PlatformActionMsg:     "103781",
+	UserAccountMsg:        "103776",
+	InstantMsg:            "103782",
+}
+
+func (m XiaoMiMsgType) GetMsgChannelId() string {
+	return xiaomiMagTypeChannelId[m]
+}
+
 // ClientType APP客户端类型
 type ClientType int
 
