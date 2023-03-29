@@ -77,10 +77,11 @@ type AndroidChannel struct {
 			} `json:"ALL"`
 			Hw map[string]interface{} `json:"HW"`
 			Op map[string]interface{} `json:"OP"`
-			Vv struct {
-				Classification int `json:"classification"` //  0代表运营消息，1代表系统消息
-				NotifyType     int `json:"notifyType"`     //通知类型 1:无，2:响铃，3:振动，4:响铃和振动 注意：只对Android 8.0及以下系统有效
-			} `json:"VV"`
+			//Vv struct {
+			//	Classification int    `json:"classification"` //0代表运营消息，1代表系统消息
+			//	NotifyType     int    `json:"notifyType"`     //通知类型 1:无，2:响铃，3:振动，4:响铃和振动 注意：只对Android 8.0及以下系统有效
+			//} `json:"VV"`
+			Vv map[string]interface{} `json:"VV"`
 			Xm map[string]interface{} `json:"XM"`
 			Ho map[string]interface{} `json:"HO"`
 		} `json:"options"` //第三方厂商扩展内容
