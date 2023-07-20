@@ -16,13 +16,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/zituocn/logx"
 	"strings"
 	"time"
 
 	"github.com/zituocn/getui-push/models"
 
 	"github.com/zituocn/gow/lib/goredis"
-	"github.com/zituocn/gow/lib/logy"
 )
 
 var (
@@ -108,7 +108,7 @@ func (g *PushClient) GetToken() (token string, err error) {
 	rdb := goredis.GetRDB()
 	token, err = rdb.Get(ctx, g.Key).Result()
 	if err != nil {
-		logy.Errorf("%s 在redis中获取token失败 :%s", NAME, err.Error())
+		logx.Errorf("%s 在redis中获取token失败 :%s", NAME, err.Error())
 	}
 	if token == "" {
 		token, err = getToken(g.AppId, g.AppKey, g.MasterSecret)
@@ -118,7 +118,7 @@ func (g *PushClient) GetToken() (token string, err error) {
 		}
 		_, err = rdb.SetEX(ctx, g.Key, token, time.Duration(expTime)).Result()
 		if err != nil {
-			logy.Errorf("%s 在redis中存储token失败 :%s", NAME, err.Error())
+			logx.Errorf("%s 在redis中存储token失败 :%s", NAME, err.Error())
 		}
 	}
 	return
@@ -608,7 +608,7 @@ func (g *PushClient) PushListByCid(msgType int, cid []string, payload *models.Cu
 		respList, err := pushListByCid(g.AppId, token, pushListParam)
 
 		if err != nil {
-			logy.Errorf("%s 按cid群推失败: %s", NAME, err.Error())
+			logx.Errorf("%s 按cid群推失败: %s", NAME, err.Error())
 		}
 		data = append(data, respList)
 		time.Sleep(time.Microsecond * 500) //休眠500ms
@@ -883,7 +883,7 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 	//		"notifyType":        -1,
 	//	}
 	//
-	//	logy.Errorf("小米新的channel")
+	//	logx.Errorf("小米新的channel")
 	//
 	//	//vivo
 	//	android.Ups.Options.Vv.Classification = 0
@@ -936,7 +936,7 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/extra.channel_id": ximiChannelId,
 			"notifyType":        -1,
 		}
-		//logy.Errorf("【小米推送】channelID:%v", ximiChannelId)
+		//logx.Errorf("【小米推送】channelID:%v", ximiChannelId)
 
 		//华为
 		huaweiChannelId, huaweiCategory, importance := MessageType(msgType).GetHuaweiInfo()
@@ -947,14 +947,14 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/message/android/notification/visibility":    "PUBLIC", //最新接口已没有此参数
 			"/message/android/notification/importance":    importance,
 		}
-		//logy.Errorf("【华为】channelId:%v, category:%v, importance:%v", huaweiChannelId, huaweiCategory, importance)
+		//logx.Errorf("【华为】channelId:%v, category:%v, importance:%v", huaweiChannelId, huaweiCategory, importance)
 
 		//荣耀
 		honorImportance := MessageType(msgType).GetHonorImportance()
 		android.Ups.Options.Ho = map[string]interface{}{
 			"/android/notification/importance": honorImportance,
 		}
-		//logy.Errorf("【荣耀】importance:%v", honorImportance)
+		//logx.Errorf("【荣耀】importance:%v", honorImportance)
 
 		//vivo
 		vvClassification := MessageType(msgType).GetViVoClassification()
@@ -964,14 +964,14 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/notifyType":     4,
 			"/category":       vvCategory,
 		}
-		//logy.Errorf("【vivo】classification:%v, category:%v", vvClassification, vvCategory)
+		//logx.Errorf("【vivo】classification:%v, category:%v", vvClassification, vvCategory)
 
 		// oppo
 		oppoChannelId := MessageType(msgType).GetOPPOChannelId()
 		android.Ups.Options.Op = map[string]interface{}{
 			"/channel_id": oppoChannelId,
 		}
-		//logy.Errorf("【oppo】channelId:%v", oppoChannelId)
+		//logx.Errorf("【oppo】channelId:%v", oppoChannelId)
 	}
 	pushChannel = &models.PushChannel{
 		Android: android,
