@@ -116,7 +116,8 @@ func (g *PushClient) GetToken() (token string, err error) {
 			err = fmt.Errorf("%s 从API获取token失败: %s", NAME, err.Error())
 			return
 		}
-		_, err = rdb.SetEX(ctx, g.Key, token, time.Duration(expTime)).Result()
+		//_, err = rdb.SetEX(ctx, g.Key, token, time.Duration(expTime)).Result()
+		_, err = rdb.SetEx(ctx, g.Key, token, time.Duration(expTime)).Result()
 		if err != nil {
 			logx.Errorf("%s 在redis中存储token失败 :%s", NAME, err.Error())
 		}
