@@ -18,13 +18,15 @@ type Setting struct {
 	//  4: 厂商优先，优先走厂商，失败时走个推通道
 	Strategy struct {
 		Default int `json:"default"`
-		IOS     int `json:"ios"` //苹果
-		ST      int `json:"st"`  //锤子/坚果
-		HW      int `json:"hw"`  //华为
-		XM      int `json:"xm"`  //小米
-		VV      int `json:"vv"`  //vivo
-		MZ      int `json:"mz"`  //魅族
-		OP      int `json:"op"`  //oppo
+		IOS     int `json:"ios"`   //苹果
+		ST      int `json:"st"`    //锤子/坚果
+		HW      int `json:"hw"`    //华为
+		HO      int `json:"ho"`    //荣耀
+		XM      int `json:"xm"`    //小米
+		VV      int `json:"vv"`    //vivo
+		MZ      int `json:"mz"`    //魅族
+		OP      int `json:"op"`    //oppo
+		HOSHW   int `json:"hoshw"` //鸿蒙华为
 	} `json:"strategy"` //
 	Speed        int `json:"speed"`         //定速推送，例如100，个推控制下发速度在100条/秒左右，0表示不限速
 	ScheduleTime int `json:"schedule_time"` //定时推送时间，必须是7天内的时间，格式：毫秒时间戳
@@ -60,7 +62,7 @@ type Notification struct {
 type UPSNotification struct {
 	Title     string `json:"title"`      //标题
 	Body      string `json:"body"`       //内容
-	ClickType string `json:"click_type"` //
+	ClickType string `json:"click_type"` //点击通知后续动作
 	Url       string `json:"url"`        //client_type为url时填写
 	Intent    string `json:"intent"`     //client_type为intent时填写；点击通知打开应用特定页面，intent格式必须正确且不能为空，长度 ≤ 4096;【注意：vivo侧厂商限制 ≤ 1024】
 	NotifyId  uint   `json:"notify_id"`  //覆盖任务时，两条消息的notify_id相同，会覆盖上一条；
@@ -88,6 +90,43 @@ type AndroidChannel struct {
 	} `json:"ups"`
 }
 
+// HarmonyChannel 鸿蒙厂商通道消息
+type HarmonyChannel struct {
+	Notification *HarmonyNotification `json:"notification"` //通知消息内容，与transmission、revoke 三选一，都填写时报错。若希望客户端离线时，直接在系统通知栏中展示通知栏消息，推荐使用此参数。
+	//Transmission string               `json:"transmission"` //透传消息内容，与notification、revoke 三选一，都填写时报错，长度 ≤ 3072
+	//Custom  string `json:"custom"` //自定义消息内容，与notification、custom、revoke四选一，都填写时报错。
+	//Options struct {
+	//	Hw map[string]interface{} `json:"HW"`
+	//} `json:"options,omitempty"` //第三方厂商扩展内容
+}
+
+// HarmonyNotification 鸿蒙厂商的 notification
+// client_type:
+// 点击通知后续动作,
+// 目前支持以下后续动作，
+// want：打开应用内特定页面（打开应用首页或特定页面，并携带自定义参数，使用这个动作）
+// startapp：打开应用首页（仅打开应用首页，不携带任何参数，使用这个动作）
+// payload：通知扩展消息（消息分类category参数必填，且设置“EXPRESS”，发送通知扩展消息前请先申请开通对应的消息自分类权益，详情请参见自分类权益申请）
+type HarmonyNotification struct {
+	Title     string `json:"title"`      //标题
+	Body      string `json:"body"`       //内容
+	Category  string `json:"category"`   //鸿蒙华为通知消息类别，结合应用的消息内容和消息发送场景使用。详情请参考 鸿蒙消息分类标准 中的 category 取值
+	ClickType string `json:"click_type"` //点击通知后续动作
+	Want      string `json:"want"`       //client_type为want时填写
+	//Want     *WantData `json:"want"`      //client_type为want时填写
+	Payload  string `json:"payload"`   //client_type为payload时填写；通知扩展消息的额外数据，传递给应用的数据,长度 ≤ 3072字
+	NotifyId uint   `json:"notify_id"` //覆盖任务时，两条消息的notify_id相同，会覆盖上一条；
+}
+
+type WantData struct {
+	DeviceId    string      `json:"deviceId"`    //设备ID，按上面示例传空值即可
+	BundleName  string      `json:"bundleName"`  //应用包名
+	AbilityName string      `json:"abilityName"` //非必填 客户端的 Ability 页面名称
+	Action      string      `json:"action"`      //和uri二选一，必填， Ability 页面 skills 标签配置 中 actions、uris 的值
+	Uri         string      `json:"uri"`         //和action二选一，必填， Ability 页面 skills 标签配置 中 actions、uris 的值
+	Parameters  interface{} `json:"parameters"`  //必须是 json 格式
+}
+
 // IOSChannel ios厂商通道消息
 type IOSChannel struct {
 	Type    string `json:"type"`    //voip：voip语音推送，notify：apns通知消息；notify默认通知消息
@@ -107,6 +146,7 @@ type IOSChannel struct {
 type PushChannel struct {
 	IOS     *IOSChannel     `json:"ios"`
 	Android *AndroidChannel `json:"android"`
+	Harmony *HarmonyChannel `json:"harmony,omitempty"`
 }
 
 type Revoke struct {

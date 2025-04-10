@@ -100,6 +100,28 @@ var honorMessageTypeImportance = map[MessageType]string{
 }
 
 /*
+harmony category意义：
+
+ACCOUNT（帐号动态）：
+用户帐号和帐号下资源资产的动态信息。
+帐号：帐号上下线、帐号状态变化、帐号信息认证等。
+资产：会员到期/过期、续费提醒、余额变动（余额必须为真实的资产变动，且需排除积分变动、金币变动，排名更新等）。
+
+MARKETING（资讯营销类）：
+包含 内容资讯 和 营销活动 两大类
+*/
+
+// harmony category 定义在华为开发者后台
+var harmonyMessageTypeCategory = map[MessageType]string{
+	ArticleMsg:            "MARKETING",
+	AlgorithmReCommendMsg: "MARKETING",
+	AttendRecommendMsg:    "MARKETING",
+	PlatformActionMsg:     "MARKETING", //由于小米的分类比较详细，后台需要分为四类，对harmony来说，都归到资讯营销类
+	UserAccountMsg:        "ACCOUNT",   //账号动态
+	InstantMsg:            "IM",        //即时聊天
+}
+
+/*
 VIVO category意义：
 
 MARKETING（运营活动）：
@@ -226,6 +248,15 @@ func (m MessageType) GetOPPOChannelId() string {
 		channelId = oppoMessageTypeChannelId[m]
 	}
 	return channelId
+}
+
+// GetHarmonyCategory 鸿蒙: 不同消息类型对应的category
+func (m MessageType) GetHarmonyCategory() string {
+	category := "MARKETING"
+	if harmonyMessageTypeCategory[m] != "" {
+		category = harmonyMessageTypeCategory[m]
+	}
+	return category
 }
 
 // ClientType APP客户端类型

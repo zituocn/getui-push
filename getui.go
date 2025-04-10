@@ -56,14 +56,27 @@ type PushStore struct {
 	Key      string //存储key名称
 }
 
+// HarmonyConfig 鸿蒙包名等配置
+type HarmonyConfig struct {
+	BundleName  string //包名
+	AbilityName string //鸿蒙配置
+	Action      string //鸿蒙配置
+	Uri         string //鸿蒙配置
+}
+
+type AppConfig struct {
+	Harmony *HarmonyConfig
+}
+
 // PushClient 个推 push client
 type PushClient struct {
 	*PushConfig
 	*PushStore
+	*AppConfig
 }
 
 // NewPushClient 返回个推实例并初始化redis信息
-func NewPushClient(conf *PushConfig, store *PushStore, toDebug bool) (client *PushClient, err error) {
+func NewPushClient(conf *PushConfig, store *PushStore, app *AppConfig, toDebug bool) (client *PushClient, err error) {
 	if conf == nil {
 		err = errors.New("配置为空")
 		return
@@ -86,6 +99,7 @@ func NewPushClient(conf *PushConfig, store *PushStore, toDebug bool) (client *Pu
 	client = &PushClient{
 		PushConfig: conf,
 		PushStore:  store,
+		AppConfig:  app,
 	}
 	err = goredis.InitDefaultDB(&goredis.RedisConfig{
 		Host:     store.Host,
@@ -400,7 +414,7 @@ func (g *PushClient) PushAll(msgType, scheduleTime int, payload *models.CustomMe
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -435,7 +449,7 @@ func (g *PushClient) PushAllByClient(msgType, scheduleTime int, clientType Clien
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -492,7 +506,7 @@ func (g *PushClient) PushSingleByCid(msgType int, cid string, payload *models.Cu
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, 0, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, 0, payload)
 	if err != nil {
 		return
 	}
@@ -530,7 +544,7 @@ func (g *PushClient) PushSingleByAlias(msgType int, alias string, payload *model
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, 0, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, 0, payload)
 	if err != nil {
 		return
 	}
@@ -572,7 +586,7 @@ func (g *PushClient) PushListByCid(msgType int, cid []string, payload *models.Cu
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, 0, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, 0, payload)
 	if err != nil {
 		return
 	}
@@ -638,7 +652,7 @@ func (g *PushClient) PushAllByCustomTag(msgType, scheduleTime int, customTag []s
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -686,7 +700,7 @@ func (g *PushClient) PushAllByLogicTags(msgType, scheduleTime int, tags []*model
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -731,7 +745,7 @@ func (g *PushClient) PushAppByFastCustomTag(msgType, scheduleTime int, tag strin
 	if err != nil {
 		return
 	}
-	pushMessage, pushChannel, setting, err := getPushMessageAndChannel(msgType, scheduleTime, payload)
+	pushMessage, pushChannel, setting, err := g.getPushMessageAndChannel(msgType, scheduleTime, payload)
 	if err != nil {
 		return
 	}
@@ -787,7 +801,7 @@ private
 //	msgType 消息类型
 //	scheduleTime 定时任务的时间戳
 //	payload 消息结构体
-func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.CustomMessage) (pushMessage *models.PushMessage, pushChannel *models.PushChannel, setting *models.Setting, err error) {
+func (m *PushClient) getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.CustomMessage) (pushMessage *models.PushMessage, pushChannel *models.PushChannel, setting *models.Setting, err error) {
 	payload.Title = strings.TrimSpace(payload.Title)
 	pushInfo, err := json.Marshal(payload)
 	if err != nil {
@@ -801,6 +815,8 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 	setting.Strategy.IOS = 2
 	setting.Strategy.Default = 1
 	setting.Strategy.HW = 1
+	setting.Strategy.HO = 1
+	setting.Strategy.HOSHW = 1
 	setting.Strategy.OP = 1
 	setting.Strategy.VV = 1
 	setting.Strategy.XM = 1
@@ -848,81 +864,13 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 	android.Ups.Notification = &models.UPSNotification{
 		Title:     payload.Title,
 		Body:      payload.Content,
-		ClickType: "intent",
+		ClickType: "intent", //打开应用内特定页面(厂商都支持)
 		Intent:    getIntent(payload.Url),
 		NotifyId:  uint(time.Now().Unix()),
 	}
 
 	// android 离线推送通道
 	// 以下为厂商配置
-
-	// 营销/全推类消息
-	//if channelType == PublicChannel {
-	//	android.Ups.Options.All.Channel = "yuanmeng_push"
-	//
-	//	//华为 OK except p10
-	//	android.Ups.Options.Hw = map[string]interface{}{
-	//		"/message/android/notification/default_sound": true,
-	//		"/message/android/notification/channel_id":    "yuanmeng_push",
-	//		"/message/android/notification/visibility":    "PUBLIC",
-	//		"/message/android/notification/importance":    "LOW",
-	//	}
-	//
-	//	//荣耀
-	//	android.Ups.Options.Ho = map[string]interface{}{
-	//		"/android/notification/importance": "LOW",
-	//	}
-	//
-	//	// oppo
-	//	android.Ups.Options.Op = map[string]interface{}{
-	//		"/channel_id": "yuanmeng_push",
-	//	}
-	//
-	//	// 小米公共
-	//	android.Ups.Options.Xm = map[string]interface{}{
-	//		"/extra.channel_id": "pre213",
-	//		"notifyType":        -1,
-	//	}
-	//
-	//	logx.Errorf("小米新的channel")
-	//
-	//	//vivo
-	//	android.Ups.Options.Vv.Classification = 0
-	//	android.Ups.Options.Vv.NotifyType = 4
-	//}
-	//
-	////聊天、即时类消息
-	//if channelType == PrivateChannel {
-	//	android.Ups.Options.All.Channel = "yuanmeng_push_im"
-	//
-	//	//华为 OK except p10
-	//	android.Ups.Options.Hw = map[string]interface{}{
-	//		"/message/android/notification/default_sound": true,
-	//		"/message/android/notification/channel_id":    "yuanmeng_push_im",
-	//		"/message/android/notification/visibility":    "PUBLIC",
-	//		"/message/android/notification/importance":    "NORMAL",
-	//	}
-	//
-	//	//荣耀
-	//	android.Ups.Options.Ho = map[string]interface{}{
-	//		"/android/notification/importance": "NORMAL",
-	//	}
-	//
-	//	// oppo
-	//	android.Ups.Options.Op = map[string]interface{}{
-	//		"/channel_id": "yuanmeng_push_im",
-	//	}
-	//
-	//	// 小米聊天
-	//	android.Ups.Options.Xm = map[string]interface{}{
-	//		"/extra.channel_id": "high_system",
-	//		"notifyType":        -1,
-	//	}
-	//
-	//	//vivo
-	//	android.Ups.Options.Vv.Classification = 1
-	//	android.Ups.Options.Vv.NotifyType = 4
-	//}
 
 	//根据最新的消息推送规定，需要按照指定的消息类型推送，不再仅分为 公用消息 和 聊天消息
 	if msgType > 0 {
@@ -937,7 +885,6 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/extra.channel_id": ximiChannelId,
 			"notifyType":        -1,
 		}
-		//logx.Errorf("【小米推送】channelID:%v", ximiChannelId)
 
 		//华为
 		huaweiChannelId, huaweiCategory, importance := MessageType(msgType).GetHuaweiInfo()
@@ -948,14 +895,12 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/message/android/notification/visibility":    "PUBLIC", //最新接口已没有此参数
 			"/message/android/notification/importance":    importance,
 		}
-		//logx.Errorf("【华为】channelId:%v, category:%v, importance:%v", huaweiChannelId, huaweiCategory, importance)
 
 		//荣耀
 		honorImportance := MessageType(msgType).GetHonorImportance()
 		android.Ups.Options.Ho = map[string]interface{}{
 			"/android/notification/importance": honorImportance,
 		}
-		//logx.Errorf("【荣耀】importance:%v", honorImportance)
 
 		//vivo
 		vvClassification := MessageType(msgType).GetViVoClassification()
@@ -965,18 +910,48 @@ func getPushMessageAndChannel(msgType int, scheduleTime int, payload *models.Cus
 			"/notifyType":     4,
 			"/category":       vvCategory,
 		}
-		//logx.Errorf("【vivo】classification:%v, category:%v", vvClassification, vvCategory)
 
 		// oppo
 		oppoChannelId := MessageType(msgType).GetOPPOChannelId()
 		android.Ups.Options.Op = map[string]interface{}{
 			"/channel_id": oppoChannelId,
 		}
-		//logx.Errorf("【oppo】channelId:%v", oppoChannelId)
 	}
 	pushChannel = &models.PushChannel{
 		Android: android,
 		IOS:     ios,
+	}
+
+	// harmony 厂商通知 配置
+	if m.AppConfig != nil && m.AppConfig.Harmony != nil {
+		harmony := &models.HarmonyChannel{}
+		harmony.Notification = &models.HarmonyNotification{
+			Title:     payload.Title,
+			Body:      payload.Content,
+			Category:  "",
+			ClickType: "want",
+			Payload:   "",
+			NotifyId:  uint(time.Now().Unix()),
+		}
+		wantData := &models.WantData{
+			DeviceId:    "",
+			BundleName:  m.AppConfig.Harmony.BundleName,
+			AbilityName: m.AppConfig.Harmony.AbilityName,
+			Action:      m.AppConfig.Harmony.Action,
+			Uri:         "",
+			Parameters:  nil,
+		}
+		//parameters中添加"gttask":""参数后，个推会自动在 [want] 里拼接 taskid 和 actionid，app 端接收到参数可以用于上报点击埋点
+		param := make(map[string]interface{})
+		param["gttask"] = ""
+		param["data"] = payload
+		wantData.Parameters = param
+		b, _ := json.Marshal(wantData)
+		harmony.Notification.Want = string(b)
+
+		//消息分类
+		harmony.Notification.Category = MessageType(msgType).GetHarmonyCategory()
+		pushChannel.Harmony = harmony
 	}
 	return
 }
