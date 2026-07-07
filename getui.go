@@ -951,6 +951,14 @@ func (m *PushClient) getPushMessageAndChannel(msgType int, scheduleTime int, pay
 
 		//消息分类
 		harmony.Notification.Category = MessageType(msgType).GetHarmonyCategory()
+		//角标
+		addNum := make(map[string]interface{})
+		addNum["addNum"] = 1
+		harmony.Options.Hw = map[string]interface{}{
+			"/payload/notification/badge":               addNum,
+			"/message/android/notification/badge/class": "com.ymsk.yuanmengzhiyuan.EntryAbility",
+		}
+
 		pushChannel.Harmony = harmony
 	}
 	return

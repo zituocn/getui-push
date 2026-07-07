@@ -93,11 +93,9 @@ type AndroidChannel struct {
 // HarmonyChannel 鸿蒙厂商通道消息
 type HarmonyChannel struct {
 	Notification *HarmonyNotification `json:"notification"` //通知消息内容，与transmission、revoke 三选一，都填写时报错。若希望客户端离线时，直接在系统通知栏中展示通知栏消息，推荐使用此参数。
-	//Transmission string               `json:"transmission"` //透传消息内容，与notification、revoke 三选一，都填写时报错，长度 ≤ 3072
-	//Custom  string `json:"custom"` //自定义消息内容，与notification、custom、revoke四选一，都填写时报错。
-	//Options struct {
-	//	Hw map[string]interface{} `json:"HW"`
-	//} `json:"options,omitempty"` //第三方厂商扩展内容
+	Options      struct {
+		Hw map[string]interface{} `json:"HW"`
+	} `json:"options,omitempty"` //第三方厂商扩展内容
 }
 
 // HarmonyNotification 鸿蒙厂商的 notification
